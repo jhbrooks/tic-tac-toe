@@ -4,36 +4,42 @@ class Game
 		@p2 = p2
 		@board = Board.new(dimension)
 		@last_move = [nil, nil]
+		@line_width = 80
 	end
 
 	def start
 		take_turn(p1)
+		return nil
 	end
 
 	private
 
 	def take_turn(player)
-		puts "It is #{player.name}'s turn."
+		puts
+		puts "It is #{player.name}'s turn.".center(line_width)
 		draw_board
 		move(player)
 		if win?
 			win(player)
-			return nil
 		elsif board.full?
 			tie
-			return nil
 		else
 			take_turn(other_player(player))
 		end
 	end
 
 	def draw_board
-		board.squares.each do |row|
-			p row
+		puts
+		row_graphic_strings = board.squares.map do |row|
+			row.join(" | ").center(line_width)
 		end
+		dash_string = ("--#{'-' * board.dimension}#{'---' * (board.dimension - 1)}").center(line_width)
+		board_graphic_string = row_graphic_strings.join("\n#{dash_string}\n")
+		puts board_graphic_string
 	end
 
 	def move(player)
+		puts
 		puts "Starting from the top, choose the row where you'd like to play."
 		row = gets.chomp!.to_i
 		puts "Starting from the left, choose the column where you'd like to play."
@@ -41,7 +47,7 @@ class Game
 		if !(row.between?(1, board.dimension)) || !(column.between?(1, board.dimension))
 			puts "Invalid move! Please try again."
 			move(player)
-		elsif !(board.squares[row - 1][column - 1].nil?)
+		elsif board.squares[row - 1][column - 1] != " "
 			puts "Space occupied! Please try again."
 			move(player)
 		else
@@ -95,13 +101,17 @@ class Game
 	end
 
 	def win(player)
-		puts "#{player.name} has won!"
+		puts
+		puts "#{player.name} has won!".center(line_width)
 		draw_board
+		puts
 	end
 
 	def tie
-		puts "It's a tie!"
+		puts
+		puts "It's a tie!".center(line_width)
 		draw_board
+		puts
 	end
 
 	def other_player(player)
@@ -140,6 +150,10 @@ class Game
 	def last_move=(row_column_pair)
 		@last_move = row_column_pair
 	end
+
+	def line_width
+		@line_width
+	end
 end
 
 class Board
@@ -149,14 +163,14 @@ class Board
 		dimension.times do
 			@squares << []
 			dimension.times do
-				@squares[-1] << nil
+				@squares[-1] << " "
 			end
 		end
 	end
 
 	def full?
 		squares.all? do |row|
-			row.none? { |square| square.nil? }
+			row.none? { |square| square == " " }
 		end
 	end
 
