@@ -1,8 +1,13 @@
+require "./computer_ai"
+
 # operates the Tic Tac Toe game
 class Game
+  include ComputerAI
+
   def initialize(p1, p2, board)
     @p1 = p1
     @p2 = p2
+    @current_player = p1
     @board = board
     @last_move_row = nil
     @last_move_column = nil
@@ -10,26 +15,27 @@ class Game
   end
 
   def start
-    take_turn(p1)
+    take_turn
     nil
   end
 
   private
 
-  attr_reader :p1, :p2, :board, :line_width
-  attr_accessor :last_move_row, :last_move_column
+  attr_reader :p1, :p2, :line_width, :board
+  attr_accessor :last_move_row, :last_move_column, :current_player
 
-  def take_turn(player)
+  def take_turn
     puts
-    puts "It is #{player.name}'s turn.".center(line_width)
+    puts "It is #{current_player.name}'s turn.".center(line_width)
     draw_board
-    move(player)
+    select_and_make_move
     if win?
-      win(player)
-    elsif board.full?
+      win
+    elsif tie?
       tie
     else
-      take_turn(other_player(player))
+      self.current_player = next_player
+      take_turn
     end
   end
 
@@ -38,23 +44,67 @@ class Game
     puts board.draw(line_width)
   end
 
-  def move(player)
+  def select_and_make_move
     puts
+    if current_player.type == "human"
+      row = human_row
+      column = human_column
+      if !(available_moves.include?([row, column]))
+        puts "Space occupied! Please try again."
+        select_and_make_move
+      else
+        make_move([row, column])
+      end
+    else
+      puts "Processing..."
+      play_optimally
+      puts "#{current_player.name} has chosen row #{last_move_row}, column #{last_move_column}."
+    end  
+  end
+
+  def human_row
     puts "Starting from the top, choose the row where you'd like to play."
     row = gets.chomp!.to_i
+    if !(row.between?(1, board.dimension))
+      puts "Invalid row! Please try again."
+      human_row
+    else
+      return row
+    end
+  end
+
+  def human_column
     puts "Starting from the left, choose the column where you'd like to play."
     column = gets.chomp!.to_i
-    if !(row.between?(1, board.dimension)) || !(column.between?(1, board.dimension))
-      puts "Invalid move! Please try again."
-      move(player)
-    elsif board.square(row, column) != " "
-      puts "Space occupied! Please try again."
-      move(player)
+    if !(column.between?(1, board.dimension))
+      puts "Invalid column! Please try again."
+      human_column
     else
-      board.update(row, column, player_mark(player))
-      self.last_move_row = row
-      self.last_move_column = column
+      return column
     end
+  end
+
+  def available_moves
+    empties = []
+    board.dimension.times do |i|
+      board.dimension.times do |j|
+        row = i + 1
+        column = j + 1
+        (empties << ([row, column])) if board.square(row, column) == " "
+      end
+    end
+    empties
+  end
+
+  def make_move(move)
+    board.update(move[0], move[1], current_player_mark)
+    self.last_move_row = move[0]
+    self.last_move_column = move[1]
+    move
+  end
+
+  def undo_move(move)
+    board.update(move[0], move[1], " ")
   end
 
   def win?
@@ -64,7 +114,7 @@ class Game
   def row_win?
     squares_to_check = []
     board.dimension.times do |i|
-      squares_to_check << (board.square(last_move_row, i))
+      squares_to_check << (board.square(last_move_row, i + 1))
     end
     squares_to_check.all? do |square|
       square == last_move_square
@@ -74,7 +124,7 @@ class Game
   def column_win?
     squares_to_check = []
     board.dimension.times do |i|
-      squares_to_check << (board.square(i, last_move_column))
+      squares_to_check << (board.square(i + 1, last_move_column))
     end
     squares_to_check.all? do |square|
       square == last_move_square
@@ -105,13 +155,17 @@ class Game
     end
   end
 
+  def tie?
+    board.full?
+  end
+
   def last_move_square
     board.square(last_move_row, last_move_column)
   end
 
-  def win(player)
+  def win
     puts
-    puts "*** #{player.name} has won! ***".center(line_width)
+    puts "*** #{current_player.name} has won! ***".center(line_width)
     draw_board
     puts
   end
@@ -123,16 +177,20 @@ class Game
     puts
   end
 
-  def other_player(player)
-    if player == p1
+  def next_player
+    if current_player == p1
       return p2
     else
       return p1
     end
   end
 
-  def player_mark(player)
-    if player == p1
+  def previous_player
+    next_player
+  end
+
+  def current_player_mark
+    if current_player == p1
       "X"
     else
       "O"
@@ -184,12 +242,13 @@ end
 
 # stores player information; handles retrieval
 class Player
-  attr_reader :name
+  attr_reader :name, :type
 
-  def initialize(name)
+  def initialize(name, type)
     @name = name
+    @type = type
   end
 end
 
-g = Game.new(Player.new("Player 1"), Player.new("Player 2"), Board.new(3))
+g = Game.new(Player.new("Player 1", "human"), Player.new("Player 2", "computer"), Board.new(3))
 g.start
