@@ -57,9 +57,9 @@ class Game
       end
     else
       puts "Processing..."
-      play_optimally
+      play_with_foresight(4)
       puts "#{current_player.name} has chosen row #{last_move_row}, column #{last_move_column}."
-    end  
+    end
   end
 
   def human_row
@@ -250,5 +250,5 @@ class Player
   end
 end
 
-g = Game.new(Player.new("Player 1", "human"), Player.new("Player 2", "computer"), Board.new(3))
+g = Game.new(Player.new("Player 1", "human"), Player.new("Player 2", "computer"), Board.new(4))
 g.start
