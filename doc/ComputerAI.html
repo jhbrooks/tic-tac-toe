@@ -67,6 +67,8 @@
     
     <li ><a href="#method-i-best_score">#best_score</a>
     
+    <li ><a href="#method-i-look_ahead">#look_ahead</a>
+    
     <li ><a href="#method-i-play_with_foresight">#play_with_foresight</a>
     
     <li ><a href="#method-i-random_move">#random_move</a>
@@ -94,15 +96,20 @@ sight</p>
 </li><li>
 <p>Only works for two players (negation toggle differentiates wins and losses)</p>
 </li><li>
-<p>Game must implement:</p>
+<p><a href="Game.html">Game</a> must implement:</p>
 <ul><li>
-<p>available_moves</p>
-</li><li>
 <p>make_move(move), undo_move(move)</p>
 </li><li>
 <p>win?, tie?</p>
 </li><li>
 <p>previous_player, next_player</p>
+</li></ul>
+</li><li>
+<p>Game.state must implement:</p>
+<ul><li>
+<p>available_moves</p>
+</li><li>
+<p>current_player=</p>
 </li></ul>
 </li></ul>
 
@@ -146,7 +153,7 @@ sight</p>
 
           
           <div class="method-source-code" id="best_moves-source">
-            <pre><span class="ruby-comment"># File computer_ai.rb, line 14</span>
+            <pre><span class="ruby-comment"># File computer_ai.rb, line 16</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">best_moves</span>(<span class="ruby-identifier">scored_moves</span>)
   <span class="ruby-identifier">best_scored_moves</span> = <span class="ruby-identifier">scored_moves</span>.<span class="ruby-identifier">select</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">_move</span>, <span class="ruby-identifier">score</span><span class="ruby-operator">|</span>
     <span class="ruby-identifier">score</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">best_score</span>(<span class="ruby-identifier">scored_moves</span>.<span class="ruby-identifier">values</span>)
@@ -182,9 +189,45 @@ sight</p>
 
           
           <div class="method-source-code" id="best_score-source">
-            <pre><span class="ruby-comment"># File computer_ai.rb, line 21</span>
+            <pre><span class="ruby-comment"># File computer_ai.rb, line 23</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">best_score</span>(<span class="ruby-identifier">scores</span>)
   <span class="ruby-identifier">scores</span>.<span class="ruby-identifier">max</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+          
+        </div>
+
+        
+
+        
+      </div>
+
+    
+      <div id="method-i-look_ahead" class="method-detail ">
+        
+        <div class="method-heading">
+          <span class="method-name">look_ahead</span><span
+            class="method-args">(sight)</span>
+          
+          <span class="method-click-advice">click to toggle source</span>
+          
+        </div>
+        
+
+        <div class="method-description">
+          
+          
+          
+          
+
+          
+          <div class="method-source-code" id="look_ahead-source">
+            <pre><span class="ruby-comment"># File computer_ai.rb, line 47</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">look_ahead</span>(<span class="ruby-identifier">sight</span>)
+  <span class="ruby-identifier">state</span>.<span class="ruby-identifier">current_player</span> = <span class="ruby-identifier">next_player</span>
+  <span class="ruby-identifier">result</span> = <span class="ruby-operator">-</span>(<span class="ruby-identifier">score_and_revert</span>(<span class="ruby-identifier">play_with_foresight</span>(<span class="ruby-identifier">sight</span>), <span class="ruby-identifier">sight</span>))
+  <span class="ruby-identifier">state</span>.<span class="ruby-identifier">current_player</span> = <span class="ruby-identifier">previous_player</span>
+  <span class="ruby-identifier">result</span>
 <span class="ruby-keyword">end</span></pre>
           </div>
           
@@ -215,10 +258,10 @@ sight</p>
 
           
           <div class="method-source-code" id="play_with_foresight-source">
-            <pre><span class="ruby-comment"># File computer_ai.rb, line 25</span>
+            <pre><span class="ruby-comment"># File computer_ai.rb, line 27</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">play_with_foresight</span>(<span class="ruby-identifier">sight</span>)
   <span class="ruby-identifier">scored_moves</span> = {}
-  <span class="ruby-identifier">available_moves</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">move</span><span class="ruby-operator">|</span>
+  <span class="ruby-identifier">state</span>.<span class="ruby-identifier">available_moves</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">move</span><span class="ruby-operator">|</span>
     <span class="ruby-identifier">make_move</span>(<span class="ruby-identifier">move</span>)
     <span class="ruby-identifier">scored_moves</span>[<span class="ruby-identifier">move</span>] = <span class="ruby-identifier">score_and_revert</span>(<span class="ruby-identifier">move</span>, <span class="ruby-identifier">sight</span>)
   <span class="ruby-keyword">end</span>
@@ -253,7 +296,7 @@ sight</p>
 
           
           <div class="method-source-code" id="random_move-source">
-            <pre><span class="ruby-comment"># File computer_ai.rb, line 10</span>
+            <pre><span class="ruby-comment"># File computer_ai.rb, line 12</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">random_move</span>(<span class="ruby-identifier">moves</span>)
   <span class="ruby-identifier">moves</span>[<span class="ruby-identifier">rand</span>(<span class="ruby-identifier">moves</span>.<span class="ruby-identifier">length</span>)]
 <span class="ruby-keyword">end</span></pre>
@@ -286,15 +329,13 @@ sight</p>
 
           
           <div class="method-source-code" id="score_and_revert-source">
-            <pre><span class="ruby-comment"># File computer_ai.rb, line 34</span>
+            <pre><span class="ruby-comment"># File computer_ai.rb, line 36</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">score_and_revert</span>(<span class="ruby-identifier">move</span>, <span class="ruby-identifier">sight</span>)
   <span class="ruby-keyword">case</span>
   <span class="ruby-keyword">when</span> <span class="ruby-identifier">win?</span> <span class="ruby-operator">||</span> (<span class="ruby-identifier">sight</span> <span class="ruby-operator">==</span> <span class="ruby-value">0</span>) <span class="ruby-keyword">then</span> <span class="ruby-identifier">result</span> = <span class="ruby-value">1</span> <span class="ruby-operator">*</span> <span class="ruby-identifier">sight</span>
   <span class="ruby-keyword">when</span> <span class="ruby-identifier">tie?</span> <span class="ruby-keyword">then</span> <span class="ruby-identifier">result</span> = <span class="ruby-value">0</span>
   <span class="ruby-keyword">else</span>
-    <span class="ruby-keyword">self</span>.<span class="ruby-identifier">current_player</span> = <span class="ruby-identifier">next_player</span>
-    <span class="ruby-identifier">result</span> = <span class="ruby-operator">-</span>(<span class="ruby-identifier">score_and_revert</span>(<span class="ruby-identifier">play_with_foresight</span>(<span class="ruby-identifier">sight</span> <span class="ruby-operator">-</span> <span class="ruby-value">1</span>), (<span class="ruby-identifier">sight</span> <span class="ruby-operator">-</span> <span class="ruby-value">1</span>)))
-    <span class="ruby-keyword">self</span>.<span class="ruby-identifier">current_player</span> = <span class="ruby-identifier">previous_player</span>
+    <span class="ruby-identifier">result</span> = <span class="ruby-identifier">look_ahead</span>(<span class="ruby-identifier">sight</span> <span class="ruby-operator">-</span> <span class="ruby-value">1</span>)
   <span class="ruby-keyword">end</span>
   <span class="ruby-identifier">undo_move</span>(<span class="ruby-identifier">move</span>)
   <span class="ruby-identifier">result</span>

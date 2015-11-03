@@ -2,10 +2,12 @@
 # * For Tic Tac Toe, for boards with dimension > 3, only usable with low sight
 # * Only works for two players (negation toggle differentiates wins and losses)
 # * Game must implement:
-#   * available_moves
 #   * make_move(move), undo_move(move)
 #   * win?, tie?
 #   * previous_player, next_player
+# * Game.state must implement:
+#   * available_moves
+#   * current_player=
 module ComputerAI
   def random_move(moves)
     moves[rand(moves.length)]
@@ -24,7 +26,7 @@ module ComputerAI
 
   def play_with_foresight(sight)
     scored_moves = {}
-    available_moves.each do |move|
+    state.available_moves.each do |move|
       make_move(move)
       scored_moves[move] = score_and_revert(move, sight)
     end
@@ -36,11 +38,16 @@ module ComputerAI
     when win? || (sight == 0) then result = 1 * sight
     when tie? then result = 0
     else
-      self.current_player = next_player
-      result = -(score_and_revert(play_with_foresight(sight - 1), (sight - 1)))
-      self.current_player = previous_player
+      result = look_ahead(sight - 1)
     end
     undo_move(move)
+    result
+  end
+
+  def look_ahead(sight)
+    state.current_player = next_player
+    result = -(score_and_revert(play_with_foresight(sight), sight))
+    state.current_player = previous_player
     result
   end
 end
