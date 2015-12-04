@@ -59,7 +59,7 @@ module TicTacToe
       move = [human_coord(:row), human_coord(:column)]
       if !(state.available_moves.include?(move))
         puts "Space occupied! Please try again.\n\n"
-        human_select_and_make_move
+        try_again(:human_select_and_make_move)
       else
         make_move(move)
       end
@@ -77,10 +77,14 @@ module TicTacToe
       coord = gets.chomp!.to_i
       if !(coord.between?(1, dimension))
         puts "Invalid #{type}! Please try again."
-        human_coord(type)
+        try_again(:human_coord, type)
       else
         return coord
       end
+    end
+
+    def try_again(method, *args)
+      self.send(method, *args)
     end
 
     def make_move(move)

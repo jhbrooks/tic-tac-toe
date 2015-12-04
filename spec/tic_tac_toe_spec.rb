@@ -3,36 +3,166 @@ require "spec_helper"
 describe TicTacToe do
   describe "::Game" do
     let(:game) do
-      TicTacToe::Game.create(:human, :human)
+      TicTacToe::Game.create(:human, :computer)
+    end
+
+    describe "#select_and_make_move" do
+      context "when the current player is human" do
+        it "calls human_select_and_make_move" do
+          allow(game).to receive(:human_select_and_make_move)
+
+          expect(game).to receive(:human_select_and_make_move)
+
+          game.send(:select_and_make_move)
+        end
+      end
+
+      context "when the current player is a computer" do
+        it "calls computer_select_and_make_move" do
+          allow(game).to receive(:human_select_and_make_move)
+          game.send(:state).current_player = game.send(:next_player)
+
+          expect(game).to receive(:computer_select_and_make_move)
+
+          game.send(:select_and_make_move)
+        end
+      end
     end
 
     describe "#human_select_and_make_move" do
-      it "uses valid input to make a move" do
-        allow(game).to receive(:human_coord).and_return(1)
-        expect(game).to receive(:make_move).with([1, 1])
+      context "when the input move is an occupied square" do
+        it "issues a warning" do
+            game.send(:make_move, [1, 1])
 
-        game.send(:human_select_and_make_move)
+            allow(game).to receive(:human_coord).and_return(1)
+            allow(game).to receive(:try_again)
+
+            expect(STDOUT)
+                  .to receive(:puts)
+                             .with("Space occupied! Please try again.\n\n")
+
+            game.send(:human_select_and_make_move)
+          end
+
+          it "tries again" do
+            game.send(:make_move, [1, 1])
+
+            allow(game).to receive(:human_coord).and_return(1)
+            allow(STDOUT).to receive(:puts)
+
+            expect(game).to receive(:try_again)
+                                   .with(:human_select_and_make_move)
+
+            game.send(:human_select_and_make_move)
+          end
+      end
+
+      context "when the input is valid" do
+        it "uses the input to make a move" do
+          allow(game).to receive(:human_coord).and_return(1)
+
+          expect(game).to receive(:make_move).with([1, 1])
+
+          game.send(:human_select_and_make_move)
+        end
+      end
+    end
+
+    describe "#computer_select_and_make_move" do
+      context "when a win is presented" do
+        it "moves to win" do
+          allow(game).to receive(:puts)
+
+          game.send(:make_move, [1, 1])
+          game.send(:make_move, [1, 2])
+          game.send(:computer_select_and_make_move)
+
+          expect(game.send(:state).last_move).to eq([1, 3])
+        end
+      end
+
+      context "when a trap is presented" do
+        it "moves to set the trap" do
+          allow(game).to receive(:puts)
+
+          game.send(:make_move, [2, 2])
+          game.send(:state).current_player = game.send(:next_player)
+          game.send(:make_move, [1, 1])
+          game.send(:make_move, [3, 3])
+          game.send(:computer_select_and_make_move)
+
+          expect([[1, 3], [3, 1]]).to include(game.send(:state).last_move)
+        end
+      end
+
+      context "when a loss is threatened" do
+        context "with no win present" do
+          it "moves to block the loss" do
+            allow(game).to receive(:puts)
+
+            game.send(:make_move, [1, 1])
+            game.send(:make_move, [1, 2])
+            game.send(:state).current_player = game.send(:next_player)
+            game.send(:computer_select_and_make_move)
+
+            expect(game.send(:state).last_move).to eq([1, 3])
+          end
+        end
+
+        context "with a win present" do
+          it "moves to win" do
+            allow(game).to receive(:puts)
+
+            game.send(:make_move, [1, 1])
+            game.send(:make_move, [1, 2])
+            game.send(:state).current_player = game.send(:next_player)
+            game.send(:make_move, [2, 1])
+            game.send(:make_move, [2, 2])
+            game.send(:computer_select_and_make_move)
+
+            expect(game.send(:state).last_move).to eq([2, 3])
+          end
+        end
+      end
+
+      context "when a trap is threatened" do
+        it "moves to block the trap" do
+          allow(game).to receive(:puts)
+
+          game.send(:make_move, [2, 2])
+          game.send(:state).current_player = game.send(:next_player)
+          game.send(:make_move, [1, 1])
+          game.send(:make_move, [3, 3])
+          game.send(:state).current_player = game.send(:next_player)
+          game.send(:computer_select_and_make_move)
+
+          expect([[1, 3], [3, 1]]).to_not include(game.send(:state).last_move)
+        end
+      end
+    end
+
+    describe "#try_again" do
+      it "runs the method given to it as its first argument" do
+        allow(game).to receive(:dummy_method)
+
+        expect(game).to receive(:dummy_method)
+
+        game.send(:try_again, :dummy_method)
+      end
+      it "passes any additional arguments along to that method" do
+        allow(game).to receive(:dummy_method).with(1, 2, 3)
+
+        expect(game).to receive(:dummy_method).with(1, 2, 3)
+
+        game.send(:try_again, :dummy_method, 1, 2, 3)
       end
     end
 
     describe "#human_coord" do
-      context "when the coord is invalid" do
-        it "issues a warning and tries again" do
-          #this causes an infite loop because the input is always invalid
-          allow_any_instance_of(Kernel).to receive(:gets).and_return("0\n")
-          expect(STDOUT)
-                .to receive(:puts).with("Starting from the top left, "\
-                                        "choose a row in which to play.")
-          expect(STDOUT)
-                .to receive(:puts).with("Invalid row! Please try again.")
-
-          game.send(:human_coord, :row)
-        end
-      end
-
       context "when the coord is a row" do
         it "asks a player for a row to play in" do
           allow_any_instance_of(Kernel).to receive(:gets).and_return("1\n")
+
           expect(STDOUT)
                 .to receive(:puts).with("Starting from the top left, "\
                                         "choose a row in which to play.")
@@ -44,11 +174,67 @@ describe TicTacToe do
       context "when the coord is a column" do
         it "asks a player for a column to play in" do
           allow_any_instance_of(Kernel).to receive(:gets).and_return("1\n")
+
           expect(STDOUT)
                 .to receive(:puts).with("Starting from the top left, "\
                                         "choose a column in which to play.")
 
           game.send(:human_coord, :column)
+        end
+      end
+
+      context "when the coord is invalid" do
+        context "when the coord is not a number" do
+          it "issues a warning" do
+            allow_any_instance_of(Kernel).to receive(:gets).and_return("a\n")
+            allow(game).to receive(:try_again)
+
+            expect(STDOUT).to receive(:puts)
+            expect(STDOUT)
+                  .to receive(:puts).with("Invalid row! Please try again.")
+
+            game.send(:human_coord, :row)
+          end
+
+          it "tries again" do
+            allow_any_instance_of(Kernel).to receive(:gets).and_return("a\n")
+            allow(STDOUT).to receive(:puts)
+
+            expect(game).to receive(:try_again).with(:human_coord, :row)
+
+            game.send(:human_coord, :row)
+          end
+        end
+
+        context "when the coord is off the board" do
+          it "issues a warning" do
+            allow_any_instance_of(Kernel).to receive(:gets).and_return("0\n")
+            allow(game).to receive(:try_again)
+
+            expect(STDOUT).to receive(:puts)
+            expect(STDOUT)
+                  .to receive(:puts).with("Invalid row! Please try again.")
+
+            game.send(:human_coord, :row)
+          end
+
+          it "tries again" do
+            allow_any_instance_of(Kernel).to receive(:gets).and_return("0\n")
+            allow(STDOUT).to receive(:puts)
+
+            expect(game).to receive(:try_again).with(:human_coord, :row)
+
+            game.send(:human_coord, :row)
+          end
+        end
+      end
+
+      context "when the coord is valid" do
+        it "returns the coord" do
+          allow_any_instance_of(Kernel).to receive(:gets).and_return("1\n")
+          allow(STDOUT).to receive(:puts)
+
+          expect(game.send(:human_coord, :row)).to eq(1)
         end
       end
     end
