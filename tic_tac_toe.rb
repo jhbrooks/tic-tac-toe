@@ -157,16 +157,22 @@ module TicTacToe
     end
 
     def win?
+      return false if no_moves_made?
       row_win? || column_win? || diagonal_win?
     end
 
     def tie?
-      board.full?
+      return false if no_moves_made?
+      win? ? false : board.full?
     end
 
     private
 
     attr_reader :board
+
+    def no_moves_made?
+      last_move == [nil, nil]
+    end
 
     def row_win?
       squares_to_check = []
@@ -239,11 +245,15 @@ module TicTacToe
     end
 
     def update(row, column, mark)
-      rows[row - 1][column - 1] = mark
+      if on_board?(row) && on_board?(column)
+        rows[row - 1][column - 1] = mark
+      end
     end
 
     def square(row, column)
-      rows[row - 1][column - 1]
+      if on_board?(row) && on_board?(column)
+        rows[row - 1][column - 1]
+      end
     end
 
     def graphic(line_width)
@@ -257,6 +267,10 @@ module TicTacToe
     private
 
     attr_reader :rows
+
+    def on_board?(coord)
+      coord > 0 && coord <= dimension
+    end
   end
 
   # This class handles player information
@@ -267,13 +281,15 @@ module TicTacToe
 
     def initialize(name, mark, type, sight)
       @name = name
-      @mark =
-        mark == " " ? "-" : mark.to_s[0]
+      @mark = sanitize_mark(mark)
       @type = type
       @sight = sight
     end
+
+    private
+
+    def sanitize_mark(mark)
+      mark.strip == "" ? "-" : mark.strip.to_s[0]
+    end
   end
 end
-
-g = TicTacToe::Game.create(:human, :computer)
-g.start
